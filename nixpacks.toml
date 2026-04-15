@@ -1,0 +1,5 @@
+[phases.setup]
+nixpkgs_channel = "stable-24_05"
+
+[phases.setup.env]
+NODE_VERSION = "20"

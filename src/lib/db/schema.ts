@@ -1,0 +1,101 @@
+// Drizzle ORM schema - placeholder
+// Full schema defined in DATA-MODEL.md
+
+import { pgTable, text, timestamp, boolean, integer, smallint, bigint, jsonb } from "drizzle-orm/pg-core";
+
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  avatarUrl: text("avatar_url"),
+  country: text("country"),
+  youtubeChannelId: text("youtube_channel_id").notNull(),
+  youtubeHandle: text("youtube_handle"),
+  youtubeMemberSince: timestamp("youtube_member_since").notNull(),
+  isCreator: boolean("is_creator").default(false).notNull(),
+  subscriptionCount: integer("subscription_count").default(0).notNull(),
+  profileSummary: text("profile_summary"),
+  dominantThemes: jsonb("dominant_themes"),
+  topCategories: jsonb("top_categories"),
+  diversityScore: bigint("diversity_score", { mode: "number" }),
+  deadChannelCount: integer("dead_channel_count").default(0).notNull(),
+  onboardingStage: text("onboarding_stage").default("imported").notNull(),
+  oauthAccessToken: text("oauth_access_token").notNull(),
+  oauthRefreshToken: text("oauth_refresh_token").notNull(),
+  oauthExpiresAt: timestamp("oauth_expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastSyncedAt: timestamp("last_synced_at"),
+  settings: jsonb("settings").default({}).notNull(),
+});
+
+export const channelMetadata = pgTable("channel_metadata", {
+  channelId: text("channel_id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  keywords: text("keywords"),
+  subscriberCount: bigint("subscriber_count", { mode: "number" }),
+  videoCount: bigint("video_count", { mode: "number" }),
+  viewCount: bigint("view_count", { mode: "number" }),
+  topicCategories: jsonb("topic_categories"),
+  country: text("country"),
+  thumbnailUrl: text("thumbnail_url"),
+  madeForKids: boolean("made_for_kids"),
+  publishedAt: timestamp("published_at"),
+  lastUploadAt: timestamp("last_upload_at"),
+  communityCategory: text("community_category"),
+  overrideCount: integer("override_count").default(0).notNull(),
+  overrideConsensus: bigint("override_consensus", { mode: "number" }),
+  lastFetchedAt: timestamp("last_fetched_at").notNull(),
+});
+
+export const userSubscriptions = pgTable("user_subscriptions", {
+  userId: text("user_id").notNull().references(() => users.id),
+  channelId: text("channel_id").notNull().references(() => channelMetadata.channelId),
+  subscribedAt: timestamp("subscribed_at"),
+  rank: integer("rank"),
+  primaryCategory: text("primary_category").notNull(),
+  secondaryCategory: text("secondary_category"),
+  aiConfidence: smallint("ai_confidence").notNull(),
+  aiReasoning: text("ai_reasoning"),
+  contentType: text("content_type"),
+  postingCadence: text("posting_cadence"),
+  status: text("status").default("active").notNull(),
+  userOverridden: boolean("user_overridden").default(false).notNull(),
+  overrideFromCategory: text("override_from_category"),
+  overrideToCategory: text("override_to_category"),
+  overriddenAt: timestamp("overridden_at"),
+  reviewed: boolean("reviewed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastSyncedAt: timestamp("last_synced_at").notNull(),
+});
+
+export const userCategories = pgTable("user_categories", {
+  id: text("id").primaryKey().default("gen_random_uuid()"),
+  userId: text("user_id").notNull().references(() => users.id),
+  parentId: text("parent_id"),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+  isDefault: boolean("is_default").default(true).notNull(),
+  channelCount: integer("channel_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const overrideLog = pgTable("override_log", {
+  id: text("id").primaryKey().default("gen_random_uuid()"),
+  userId: text("user_id").notNull().references(() => users.id),
+  channelId: text("channel_id").notNull().references(() => channelMetadata.channelId),
+  fromCategory: text("from_category").notNull(),
+  toCategory: text("to_category").notNull(),
+  aiConfidenceWas: smallint("ai_confidence_was").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const channelScores = pgTable("channel_scores", {
+  userId: text("user_id").notNull().references(() => users.id),
+  channelId: text("channel_id").notNull().references(() => channelMetadata.channelId),
+  consumptionRate: bigint("consumption_rate", { mode: "number" }),
+  lastWatchedAt: timestamp("last_watched_at"),
+  watchGapDays: integer("watch_gap_days"),
+  tier: text("tier"),
+  scoredAt: timestamp("scored_at"),
+});

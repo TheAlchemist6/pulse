@@ -1,0 +1,21 @@
+[railway]
+  entrypoint = "node_modules/.bin/next"
+
+[build]
+  builder = "NIXPACKS"
+  
+[deploy]
+  startCommand = "npm start"
+  healthCheckPath = "/"
+  restartPolicyType = "ON_FAILURE"
+  restartPolicyMaxRetries = 10
+
+[variables]
+  NODE_ENV = "production"
+  DATABASE_URL = "${DATABASE_URL}"
+  NEXTAUTH_URL = "${NEXTAUTH_URL}"
+  NEXTAUTH_SECRET = "${NEXTAUTH_SECRET}"
+  GOOGLE_CLIENT_ID = "${GOOGLE_CLIENT_ID}"
+  GOOGLE_CLIENT_SECRET = "${GOOGLE_CLIENT_SECRET}"
+  ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY}"
+  TOKEN_ENCRYPTION_KEY = "${TOKEN_ENCRYPTION_KEY}"
