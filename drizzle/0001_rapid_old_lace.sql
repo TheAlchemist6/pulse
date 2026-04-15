@@ -1,0 +1,2 @@
+ALTER TABLE "channel_scores" ADD CONSTRAINT "channel_scores_user_id_channel_id_pk" PRIMARY KEY("user_id","channel_id");--> statement-breakpoint
+ALTER TABLE "user_subscriptions" ADD CONSTRAINT "user_subscriptions_user_id_channel_id_pk" PRIMARY KEY("user_id","channel_id");

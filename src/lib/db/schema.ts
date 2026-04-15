@@ -1,16 +1,16 @@
 // Drizzle ORM schema - placeholder
 // Full schema defined in DATA-MODEL.md
 
-import { pgTable, text, timestamp, boolean, integer, smallint, bigint, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, smallint, bigint, jsonb, primaryKey } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   avatarUrl: text("avatar_url"),
   country: text("country"),
-  youtubeChannelId: text("youtube_channel_id").notNull(),
+  youtubeChannelId: text("youtube_channel_id"),
   youtubeHandle: text("youtube_handle"),
-  youtubeMemberSince: timestamp("youtube_member_since").notNull(),
+  youtubeMemberSince: timestamp("youtube_member_since"),
   isCreator: boolean("is_creator").default(false).notNull(),
   subscriptionCount: integer("subscription_count").default(0).notNull(),
   profileSummary: text("profile_summary"),
@@ -19,9 +19,9 @@ export const users = pgTable("users", {
   diversityScore: bigint("diversity_score", { mode: "number" }),
   deadChannelCount: integer("dead_channel_count").default(0).notNull(),
   onboardingStage: text("onboarding_stage").default("imported").notNull(),
-  oauthAccessToken: text("oauth_access_token").notNull(),
-  oauthRefreshToken: text("oauth_refresh_token").notNull(),
-  oauthExpiresAt: timestamp("oauth_expires_at").notNull(),
+  oauthAccessToken: text("oauth_access_token"),
+  oauthRefreshToken: text("oauth_refresh_token"),
+  oauthExpiresAt: timestamp("oauth_expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastSyncedAt: timestamp("last_synced_at"),
   settings: jsonb("settings").default({}).notNull(),
@@ -66,7 +66,9 @@ export const userSubscriptions = pgTable("user_subscriptions", {
   reviewed: boolean("reviewed").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   lastSyncedAt: timestamp("last_synced_at").notNull(),
-});
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.channelId] }),
+}));
 
 export const userCategories = pgTable("user_categories", {
   id: text("id").primaryKey().default("gen_random_uuid()"),
@@ -98,4 +100,6 @@ export const channelScores = pgTable("channel_scores", {
   watchGapDays: integer("watch_gap_days"),
   tier: text("tier"),
   scoredAt: timestamp("scored_at"),
-});
+}, (table) => ({
+  pk: primaryKey({ columns: [table.userId, table.channelId] }),
+}));
