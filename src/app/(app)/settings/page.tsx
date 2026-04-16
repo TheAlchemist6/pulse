@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { SyncButton } from "@/components/settings/sync-button";
-import { signOut } from "next-auth/react";
+import { SignOutButton } from "@/components/settings/sign-out-button";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -95,9 +95,7 @@ export default async function SettingsPage() {
                 Sign out of your Pulse account
               </p>
             </div>
-            <Button variant="outline" onClick={() => signOut({ callbackUrl: "/signin" })}>
-              Sign Out
-            </Button>
+            <SignOutButton />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
