@@ -113,6 +113,7 @@ export interface ChannelClassification {
 }
 
 export interface ProfileAnalysis {
+  archetype: string;
   profileSummary: string;
   dominantThemes: string[];
   categoryAdjustments: {
@@ -273,10 +274,13 @@ export async function classifyChannelsBatch(
     return [];
   }
 
+  // Build a map of input channelIds by index for fallback matching
+  const inputIds = channels.map((ch) => ch.channelId);
+
   return withRetry(async () => {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: PASS1_SYSTEM_PROMPT,
       messages: [
         {
@@ -299,7 +303,19 @@ export async function classifyChannelsBatch(
       throw new Error("Expected JSON array from Pass 1");
     }
 
-    return parsed as ChannelClassification[];
+    // Map response items, using input order as fallback for channelId
+    return parsed.map((item: Record<string, unknown>, idx: number) => {
+      const resolvedId = item.channelId || item.channel_id || inputIds[idx] || "";
+      return {
+        channelId: resolvedId as string,
+        primaryCategory: (item.primaryCategory || item.primary_category || "Uncategorized") as string,
+        secondaryCategory: (item.secondaryCategory || item.secondary_category || null) as string | null,
+        confidence: (item.confidence || 3) as number,
+        reasoning: (item.reasoning || "") as string,
+        contentType: (item.contentType || item.content_type || "mixed") as string,
+        postingCadence: (item.postingCadence || item.posting_cadence || "irregular") as string,
+      };
+    }) as ChannelClassification[];
   });
 }
 
@@ -357,7 +373,7 @@ function buildPass2UserPrompt(
   categoryDistribution: CategoryDistribution,
   deadChannels: { channelId: string; name: string }[],
   lowConfidenceChannels: { channelId: string; name: string; category: string }[],
-  allChannels: { channelId: string; name: string; category: string; confidence: number }[]
+  allChannels: { channelId: string; name: string; category: string; confidence: number; subscribedAt?: string | null }[]
 ): string {
   const distributionLines = Object.entries(categoryDistribution)
     .map(([topCat, data]) => {
@@ -373,7 +389,7 @@ function buildPass2UserPrompt(
     .join("\n");
 
   const summarizedChannels = allChannels
-    .map((ch) => `${ch.name} | ${ch.category} | confidence: ${ch.confidence}`)
+    .map((ch) => `${ch.name} | ${ch.category} | confidence: ${ch.confidence}${ch.subscribedAt ? ` | subscribed: ${ch.subscribedAt.slice(0, 7)}` : ""}`)
     .join("\n");
 
   return `Category distribution:
@@ -387,13 +403,14 @@ Channel list with categories and confidence:
 ${summarizedChannels}
 
 Provide:
-1. profile_summary: 2-3 sentence description of this person's interests
-2. dominant_themes: top 5 interest areas ranked by channel density
-3. category_adjustments: channels that make more sense in a different
+1. archetype: A short personality-test-style label for this subscriber (3-5 words, e.g., "The Tech-Curious Builder", "The Polymath Explorer", "The Creative Entrepreneur"). Make it feel personal and specific to their actual profile, not generic.
+2. profile_summary: 2-3 sentence description of this person's interests
+3. dominant_themes: top 5 interest areas ranked by channel density
+4. category_adjustments: channels that make more sense in a different
    category when you see the FULL picture (cross-channel corrections)
-4. outliers: channels that don't fit the user's overall pattern
-5. redundancies: clusters of 3+ channels covering the same niche
-6. subscription_eras: cluster channels by subscribed_at date + category
+5. outliers: channels that don't fit the user's overall pattern
+6. redundancies: clusters of 3+ channels covering the same niche
+7. subscription_eras: cluster channels by subscribed_at date + category
    overlap, name each era (e.g., "Your 2020 learn-to-code phase")
 
 Return JSON. No markdown.`;
@@ -403,12 +420,12 @@ export async function analyzeProfile(
   categoryDistribution: CategoryDistribution,
   deadChannels: { channelId: string; name: string }[],
   lowConfidenceChannels: { channelId: string; name: string; category: string }[],
-  allChannels: { channelId: string; name: string; category: string; confidence: number }[]
+  allChannels: { channelId: string; name: string; category: string; confidence: number; subscribedAt?: string | null }[]
 ): Promise<ProfileAnalysis> {
   return withRetry(async () => {
     const response = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: PASS2_SYSTEM_PROMPT,
       messages: [
         {
@@ -429,7 +446,34 @@ export async function analyzeProfile(
     }
 
     const cleaned = text.text.trim().replace(/```json\n?|```\n?/g, "");
-    return JSON.parse(cleaned) as ProfileAnalysis;
+    const raw = JSON.parse(cleaned);
+
+    // Map snake_case keys from Claude response to camelCase interface
+    return {
+      archetype: raw.archetype || "The Curious Subscriber",
+      profileSummary: raw.profileSummary || raw.profile_summary || "",
+      dominantThemes: raw.dominantThemes || raw.dominant_themes || [],
+      categoryAdjustments: (raw.categoryAdjustments || raw.category_adjustments || []).map((a: Record<string, unknown>) => ({
+        channelId: a.channelId || a.channel_id || "",
+        from: a.from || "",
+        to: a.to || "",
+        reason: a.reason || "",
+      })),
+      outliers: (raw.outliers || []).map((o: Record<string, unknown>) => ({
+        channelId: o.channelId || o.channel_id || "",
+        reason: o.reason || "",
+      })),
+      redundancies: (raw.redundancies || []).map((r: Record<string, unknown>) => ({
+        channels: r.channels || [],
+        topic: r.topic || "",
+      })),
+      subscriptionEras: (raw.subscriptionEras || raw.subscription_eras || []).map((e: Record<string, unknown>) => ({
+        period: e.period || "",
+        name: e.name || "",
+        channels: e.channels || [],
+        theme: e.theme || "",
+      })),
+    } as ProfileAnalysis;
   });
 }
 

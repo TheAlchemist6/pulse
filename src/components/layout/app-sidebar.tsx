@@ -9,7 +9,12 @@ import {
   Layers,
   Tags,
   Settings,
+  LogOut,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -31,6 +36,10 @@ const navItems = [
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => setMounted(true), []);
 
   return (
     <div className="flex flex-col w-64 border-r bg-background h-screen sticky top-0">
@@ -63,7 +72,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t">
+      <div className="p-4 border-t space-y-3">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user.avatar_url || user.image || ""} alt={user.name || "User"} />
@@ -71,7 +80,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
               {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col min-w-0">
+          <div className="flex flex-col min-w-0 flex-1">
             <span className="text-sm font-medium truncate">
               {user.name || "User"}
             </span>
@@ -79,6 +88,27 @@ export function AppSidebar({ user }: AppSidebarProps) {
               {user.email}
             </span>
           </div>
+        </div>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 justify-start gap-2 text-muted-foreground hover:text-foreground"
+            onClick={() => signOut({ callbackUrl: "/" })}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </Button>
+          {mounted && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground px-2"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
       </div>
     </div>

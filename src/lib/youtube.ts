@@ -33,14 +33,21 @@ export interface YouTubeSubscription {
 // YouTube API Client
 // ============================================================================
 
-const youtube = google.youtube_v3;
+const youtube = google.youtube({ version: "v3" });
+
+function createOAuth2Client() {
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+}
 
 // ============================================================================
 // Step 1: Fetch Subscriptions (paginated)
 // ============================================================================
 
 export async function fetchSubscriptions(accessToken: string): Promise<YouTubeSubscription[]> {
-  const auth = new google.auth.OAuth2();
+  const auth = createOAuth2Client();
   auth.setCredentials({ access_token: accessToken });
 
   const subscriptions: YouTubeSubscription[] = [];
@@ -84,7 +91,7 @@ export async function fetchChannelMetadata(
 ): Promise<YouTubeChannel[]> {
   if (channelIds.length === 0) return [];
 
-  const auth = new google.auth.OAuth2();
+  const auth = createOAuth2Client();
   auth.setCredentials({ access_token: accessToken });
 
   // Check cache first - skip channels that were fetched within 30 days
@@ -311,9 +318,9 @@ export async function getFreshAccessToken(
   
   // If token expires in less than 5 minutes, refresh it
   if (expiresAt.getTime() - now.getTime() < 5 * 60 * 1000) {
-    const auth = new google.auth.OAuth2();
+    const auth = createOAuth2Client();
     auth.setCredentials({ refresh_token: refreshToken });
-    
+
     const { credentials } = await auth.refreshAccessToken();
     return credentials.access_token || currentToken;
   }

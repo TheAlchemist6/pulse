@@ -1,7 +1,51 @@
-// Drizzle ORM schema - placeholder
-// Full schema defined in DATA-MODEL.md
+import { pgTable, text, timestamp, boolean, integer, smallint, bigint, jsonb, primaryKey, doublePrecision } from "drizzle-orm/pg-core";
+import type { AdapterAccountType } from "next-auth/adapters";
 
-import { pgTable, text, timestamp, boolean, integer, smallint, bigint, jsonb, primaryKey } from "drizzle-orm/pg-core";
+// ============================================================
+// Auth.js standard tables (required by DrizzleAdapter)
+// ============================================================
+
+export const authUsers = pgTable("user", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text("name"),
+  email: text("email").unique(),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
+  image: text("image"),
+});
+
+export const accounts = pgTable("account", {
+  userId: text("userId").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  type: text("type").$type<AdapterAccountType>().notNull(),
+  provider: text("provider").notNull(),
+  providerAccountId: text("providerAccountId").notNull(),
+  refresh_token: text("refresh_token"),
+  access_token: text("access_token"),
+  expires_at: integer("expires_at"),
+  token_type: text("token_type"),
+  scope: text("scope"),
+  id_token: text("id_token"),
+  session_state: text("session_state"),
+}, (account) => ({
+  compoundKey: primaryKey({ columns: [account.provider, account.providerAccountId] }),
+}));
+
+export const sessions = pgTable("session", {
+  sessionToken: text("sessionToken").primaryKey(),
+  userId: text("userId").notNull().references(() => authUsers.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+});
+
+export const verificationTokens = pgTable("verificationToken", {
+  identifier: text("identifier").notNull(),
+  token: text("token").notNull(),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+}, (verificationToken) => ({
+  compositePk: primaryKey({ columns: [verificationToken.identifier, verificationToken.token] }),
+}));
+
+// ============================================================
+// Pulse application tables
+// ============================================================
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -13,10 +57,11 @@ export const users = pgTable("users", {
   youtubeMemberSince: timestamp("youtube_member_since"),
   isCreator: boolean("is_creator").default(false).notNull(),
   subscriptionCount: integer("subscription_count").default(0).notNull(),
+  archetype: text("archetype"),
   profileSummary: text("profile_summary"),
   dominantThemes: jsonb("dominant_themes"),
   topCategories: jsonb("top_categories"),
-  diversityScore: bigint("diversity_score", { mode: "number" }),
+  diversityScore: doublePrecision("diversity_score"),
   deadChannelCount: integer("dead_channel_count").default(0).notNull(),
   onboardingStage: text("onboarding_stage").default("imported").notNull(),
   oauthAccessToken: text("oauth_access_token"),
@@ -43,7 +88,7 @@ export const channelMetadata = pgTable("channel_metadata", {
   lastUploadAt: timestamp("last_upload_at"),
   communityCategory: text("community_category"),
   overrideCount: integer("override_count").default(0).notNull(),
-  overrideConsensus: bigint("override_consensus", { mode: "number" }),
+  overrideConsensus: doublePrecision("override_consensus"),
   lastFetchedAt: timestamp("last_fetched_at").notNull(),
 });
 
@@ -95,7 +140,7 @@ export const overrideLog = pgTable("override_log", {
 export const channelScores = pgTable("channel_scores", {
   userId: text("user_id").notNull().references(() => users.id),
   channelId: text("channel_id").notNull().references(() => channelMetadata.channelId),
-  consumptionRate: bigint("consumption_rate", { mode: "number" }),
+  consumptionRate: doublePrecision("consumption_rate"),
   lastWatchedAt: timestamp("last_watched_at"),
   watchGapDays: integer("watch_gap_days"),
   tier: text("tier"),

@@ -106,6 +106,7 @@ export async function GET() {
         isCreator: user.isCreator,
         youtubeMemberSince: user.youtubeMemberSince,
         subscriptionCount: user.subscriptionCount,
+        archetype: user.archetype || null,
         profileSummary: user.profileSummary || generateProfileSummary(topCategories, total),
         dominantThemes: user.dominantThemes || topCategories.slice(0, 3).map(c => c.name),
         topCategories,

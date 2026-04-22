@@ -13,9 +13,17 @@ export default async function AppLayout({
     redirect("/signin");
   }
 
+  // Serialize user data to plain object — no functions or class instances
+  const user = {
+    name: session.user.name ?? null,
+    email: session.user.email ?? null,
+    image: session.user.image ?? null,
+    avatar_url: session.user.avatar_url ?? null,
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
-      <AppSidebar user={session.user} />
+      <AppSidebar user={user} />
       <main className="flex-1 min-h-screen">{children}</main>
     </div>
   );

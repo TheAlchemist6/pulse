@@ -31,6 +31,14 @@ import {
 // Types
 // ============================================================================
 
+export interface ClassifiedChannel {
+  channelId: string;
+  name: string;
+  thumbnailUrl: string | null;
+  category: string;
+  confidence: number;
+}
+
 export interface ImportProgressEvent {
   step:
     | "subscriptions"
@@ -46,6 +54,7 @@ export interface ImportProgressEvent {
   subscriptionCount?: number;
   deadChannelCount?: number;
   error?: string;
+  classifiedChannels?: ClassifiedChannel[];
 }
 
 export interface ImportPipelineResult {
@@ -61,8 +70,8 @@ export interface ImportPipelineResult {
 // Constants
 // ============================================================================
 
-const BATCH_SIZE = 25;
-const MAX_CONCURRENT_BATCHES = 4;
+const BATCH_SIZE = 40;
+const MAX_CONCURRENT_BATCHES = 8;
 const RSS_CONCURRENCY = 20;
 const DEAD_CHANNEL_THRESHOLD_MONTHS = 6;
 
@@ -160,6 +169,43 @@ export async function* importPipeline(
       message: `Upload dates checked — ${deadChannelCount} dead channels detected`,
     };
 
+    // ===== SEED DEFAULT CATEGORIES (if first import) =====
+    const existingCategories = await db
+      .select()
+      .from(userCategories)
+      .where(eq(userCategories.userId, userId))
+      .limit(1);
+
+    if (existingCategories.length === 0) {
+      const { DEFAULT_TAXONOMY } = await import("@/lib/utils");
+      let sortOrder = 0;
+      for (const topLevel of DEFAULT_TAXONOMY) {
+        const parentId = crypto.randomUUID();
+        await db.insert(userCategories).values({
+          id: parentId,
+          userId,
+          parentId: null,
+          name: topLevel.name,
+          slug: topLevel.slug,
+          sortOrder: sortOrder++,
+          isDefault: true,
+          channelCount: 0,
+        });
+        for (const child of topLevel.children) {
+          await db.insert(userCategories).values({
+            id: crypto.randomUUID(),
+            userId,
+            parentId,
+            name: child.name,
+            slug: child.slug,
+            sortOrder: sortOrder++,
+            isDefault: true,
+            channelCount: 0,
+          });
+        }
+      }
+    }
+
     // ===== STEP 3: Pass 1 — Deep Classification =====
     yield {
       step: "classify",
@@ -235,14 +281,28 @@ export async function* importPipeline(
         }
       }
 
-      // Progress update
-      const totalProcessed = i + batchResults.flat().length;
+      // Progress update with classified channel data for live sorting UI
+      const flatResults = batchResults.flat();
+      const totalProcessed = i + flatResults.length;
       const communityCount = communityOverrideMap.size;
       const aiProcessed = communityCount + totalProcessed;
+
+      const classifiedChannels: ClassifiedChannel[] = flatResults.map((r) => {
+        const ch = channelMap.get(r.channelId);
+        return {
+          channelId: r.channelId,
+          name: ch?.title || "Unknown",
+          thumbnailUrl: ch?.thumbnailUrl || null,
+          category: r.primaryCategory,
+          confidence: r.confidence,
+        };
+      });
+
       yield {
         step: "classify",
         progress: `${aiProcessed}/${subscriptionCount}`,
         message: `Classified ${aiProcessed} of ${subscriptionCount} channels...`,
+        classifiedChannels,
       };
     }
 
@@ -381,6 +441,7 @@ export async function* importPipeline(
       name: channelTitles.get(s.channelId) || "Unknown",
       category: s.primaryCategory,
       confidence: s.aiConfidence,
+      subscribedAt: s.subscribedAt?.toISOString() || null,
     }));
 
     const profileAnalysis = await analyzeProfile(
@@ -452,6 +513,7 @@ export async function* importPipeline(
       .update(users)
       .set({
         subscriptionCount,
+        archetype: profileAnalysis.archetype,
         profileSummary: profileAnalysis.profileSummary,
         dominantThemes: profileAnalysis.dominantThemes,
         topCategories,

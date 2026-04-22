@@ -92,14 +92,19 @@ export async function POST() {
       };
       
       try {
+        console.log("[import] Starting import for user:", userId);
+
         // ===== Get User's OAuth Token =====
         const [user] = await db
           .select()
           .from(users)
           .where(eq(users.id, userId))
           .limit(1);
-        
+
+        console.log("[import] User found:", !!user, "has token:", !!user?.oauthAccessToken);
+
         if (!user?.oauthAccessToken) {
+          console.log("[import] No access token found, aborting");
           sendEvent({ step: "error", message: "No YouTube access token found" });
           controller.close();
           return;
@@ -128,17 +133,20 @@ export async function POST() {
         }
         
         // ===== Run Import Pipeline =====
+        console.log("[import] Starting pipeline with token length:", accessToken.length);
         for await (const event of importPipeline(userId, accessToken)) {
+          console.log("[import] Event:", event.step, event.message);
           sendEvent(event);
-          
+
           // If complete or error, stop
           if (event.step === "complete" || event.step === "error") {
             break;
           }
         }
-        
+        console.log("[import] Pipeline finished");
+
       } catch (error) {
-        console.error("Import pipeline error:", error);
+        console.error("[import] Pipeline error:", error);
         sendEvent({ 
           step: "error", 
           message: error instanceof Error ? error.message : "Pipeline failure" 
