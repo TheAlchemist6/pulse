@@ -278,24 +278,6 @@ export default function WelcomeWizard() {
     setAct("mirror");
   }, []);
 
-  // Check if user already has data on mount
-  useEffect(() => {
-    async function check() {
-      try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user?.subscriptionCount > 0) {
-            // Already imported — go straight to dashboard
-            router.push("/dashboard");
-            return;
-          }
-        }
-      } catch { /* continue to permission */ }
-    }
-    check();
-  }, [router]);
-
   // Timeline era animation
   useEffect(() => {
     if (act !== "timeline") return;
