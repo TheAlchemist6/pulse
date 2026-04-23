@@ -245,38 +245,11 @@ export default function WelcomeWizard() {
   }, []);
 
   const loadData = useCallback(async () => {
-    const [profileRes, insightsRes] = await Promise.all([
-      fetch("/api/profile"),
-      fetch("/api/insights"),
-    ]);
-
-    let profileData: ProfileData | null = null;
-    let insightsData: InsightsData | null = null;
-
-    if (profileRes.ok) {
-      profileData = await profileRes.json();
-      setProfile(profileData);
-    }
-    if (insightsRes.ok) {
-      insightsData = await insightsRes.json();
-      setInsights(insightsData);
-    }
-
-    // Prepare weak channels for Act 5
-    if (insightsData) {
-      const weak = [
-        ...(insightsData.deadChannels || []).slice(0, 3),
-        ...(insightsData.lowConfidence || []).slice(0, 2).map((c) => ({
-          channelId: c.channelId,
-          title: c.title,
-          lastUploadAt: null as string | null,
-        })),
-      ].slice(0, 5);
-      setWeakChannels(weak);
-    }
-
-    setAct("mirror");
-  }, []);
+    // Tier 1: once import completes, head straight to the dashboard.
+    // Mirror/Timeline/Reckoning/First-Move acts stay in the codebase but
+    // are skipped for now — dashboard is where classifications land.
+    router.push("/dashboard");
+  }, [router]);
 
   // Timeline era animation
   useEffect(() => {
