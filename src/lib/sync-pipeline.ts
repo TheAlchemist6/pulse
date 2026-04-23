@@ -149,9 +149,12 @@ export async function runSyncPipeline(
         // Use community override - confidence = 5
         classification = {
           channelId: channel.id,
-          primaryCategory: cached[0].communityCategory as any,
+          primaryGroup: null,
+          primaryNiche: null,
+          primaryCategory: cached[0].communityCategory,
           secondaryCategory: null,
           confidence: 5,
+          classificationSource: "uncategorized",
           reasoning:
             "Community-validated category (override consensus >= 0.7)",
           contentType: "mixed",
@@ -175,6 +178,9 @@ export async function runSyncPipeline(
           subscribedAt: sub.subscribedAt ? new Date(sub.subscribedAt) : null,
           primaryCategory: classification.primaryCategory,
           secondaryCategory: classification.secondaryCategory,
+          primaryGroup: classification.primaryGroup,
+          primaryNiche: classification.primaryNiche,
+          classificationSource: classification.classificationSource,
           aiConfidence: classification.confidence,
           aiReasoning: classification.reasoning,
           contentType: classification.contentType,

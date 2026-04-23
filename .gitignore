@@ -40,3 +40,9 @@ next-env.d.ts
 
 # Drizzle
 drizzle/meta/
+
+# Classification v2 artifacts (OPEN-1, OPEN-3)
+audit-output/
+reports/
+models/
+.cache/

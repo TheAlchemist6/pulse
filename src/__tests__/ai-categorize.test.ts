@@ -23,13 +23,13 @@ describe("TAXONOMY", () => {
     expect(ALL_LEAF_CATEGORIES.length).toBeGreaterThanOrEqual(45);
   });
 
-  it("includes the Creator Economy & Media category", () => {
-    expect(ALL_TOP_LEVEL_CATEGORIES).toContain("Creator Economy & Media");
+  it("includes the Creator Economy category", () => {
+    expect(ALL_TOP_LEVEL_CATEGORIES).toContain("Creator Economy");
   });
 
-  it("every top-level has at least 4 leaves", () => {
+  it("every top-level has at least 5 leaves", () => {
     for (const [top, leaves] of Object.entries(TAXONOMY)) {
-      expect(leaves.length, `${top} should have >= 4 leaves`).toBeGreaterThanOrEqual(4);
+      expect(leaves.length, `${top} should have >= 5 leaves`).toBeGreaterThanOrEqual(5);
     }
   });
 
@@ -46,12 +46,12 @@ describe("TAXONOMY", () => {
 describe("isValidLeafCategory", () => {
   it("returns true for valid leaf categories", () => {
     expect(isValidLeafCategory("AI & Machine Learning")).toBe(true);
-    expect(isValidLeafCategory("Esports")).toBe(true);
-    expect(isValidLeafCategory("Podcasting")).toBe(true);
+    expect(isValidLeafCategory("Esports & Competitive")).toBe(true);
+    expect(isValidLeafCategory("Podcasting & Long-form")).toBe(true);
   });
 
   it("returns false for top-level categories", () => {
-    expect(isValidLeafCategory("Technology & Software")).toBe(false);
+    expect(isValidLeafCategory("Tech & Software")).toBe(false);
     expect(isValidLeafCategory("Gaming")).toBe(false);
   });
 
@@ -63,15 +63,15 @@ describe("isValidLeafCategory", () => {
 
 describe("getTopLevelCategory", () => {
   it("maps leaf to correct parent", () => {
-    expect(getTopLevelCategory("AI & Machine Learning")).toBe("Technology & Software");
-    expect(getTopLevelCategory("Esports")).toBe("Gaming");
-    expect(getTopLevelCategory("Podcasting")).toBe("Creator Economy & Media");
-    expect(getTopLevelCategory("Combat Sports")).toBe("Sports");
+    expect(getTopLevelCategory("AI & Machine Learning")).toBe("Tech & Software");
+    expect(getTopLevelCategory("Esports & Competitive")).toBe("Gaming");
+    expect(getTopLevelCategory("Podcasting & Long-form")).toBe("Creator Economy");
+    expect(getTopLevelCategory("Combat Sports & MMA")).toBe("Sports");
   });
 
   it("returns null for invalid categories", () => {
     expect(getTopLevelCategory("Not A Category")).toBeNull();
-    expect(getTopLevelCategory("Technology & Software")).toBeNull(); // top-level, not leaf
+    expect(getTopLevelCategory("Tech & Software")).toBeNull(); // top-level, not leaf
   });
 });
 
@@ -84,12 +84,12 @@ describe("computeCategoryDistribution", () => {
     const channels = [
       { category: "AI & Machine Learning" },
       { category: "Programming & Dev" },
-      { category: "Esports" },
+      { category: "Esports & Competitive" },
       { category: "AI & Machine Learning" },
     ];
 
     const dist = computeCategoryDistribution(channels);
-    expect(dist["Technology & Software"].count).toBe(3);
+    expect(dist["Tech & Software"].count).toBe(3);
     expect(dist["Gaming"].count).toBe(1);
   });
 
@@ -101,8 +101,8 @@ describe("computeCategoryDistribution", () => {
     ];
 
     const dist = computeCategoryDistribution(channels);
-    expect(dist["Technology & Software"].subcategories?.["AI & Machine Learning"]).toBe(2);
-    expect(dist["Technology & Software"].subcategories?.["Programming & Dev"]).toBe(1);
+    expect(dist["Tech & Software"].subcategories?.["AI & Machine Learning"]).toBe(2);
+    expect(dist["Tech & Software"].subcategories?.["Programming & Dev"]).toBe(1);
   });
 
   it("returns empty object for empty input", () => {
@@ -117,7 +117,7 @@ describe("computeCategoryDistribution", () => {
 
     const dist = computeCategoryDistribution(channels);
     expect(Object.keys(dist)).toHaveLength(1);
-    expect(dist["Technology & Software"].count).toBe(1);
+    expect(dist["Tech & Software"].count).toBe(1);
   });
 });
 

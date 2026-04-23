@@ -310,9 +310,12 @@ export async function* importPipeline(
     for (const [channelId, override] of communityOverrideMap.entries()) {
       classifications.set(channelId, {
         channelId,
-        primaryCategory: override.category as any,
+        primaryGroup: null,
+        primaryNiche: null,
+        primaryCategory: override.category,
         secondaryCategory: null,
-        confidence: override.confidence as any,
+        confidence: override.confidence as 1 | 2 | 3 | 4 | 5,
+        classificationSource: "community",
         reasoning: "Community-validated category (override consensus >= 0.7)",
         contentType: "mixed",
         postingCadence: "irregular",
@@ -320,21 +323,8 @@ export async function* importPipeline(
     }
 
     // ===== SAVE to user_subscriptions =====
-    const subscriptionValues: {
-      userId: string;
-      channelId: string;
-      subscribedAt: Date | null;
-      primaryCategory: string;
-      secondaryCategory: string | null;
-      aiConfidence: number;
-      aiReasoning: string | null;
-      contentType: string | null;
-      postingCadence: string | null;
-      status: string;
-      userOverridden: boolean;
-      reviewed: boolean;
-      lastSyncedAt: Date;
-    }[] = [];
+    type SubscriptionRow = typeof userSubscriptions.$inferInsert;
+    const subscriptionValues: SubscriptionRow[] = [];
 
     for (const sub of subscriptions) {
       const channel = channelMap.get(sub.channelId);
@@ -349,6 +339,9 @@ export async function* importPipeline(
         subscribedAt: sub.subscribedAt ? new Date(sub.subscribedAt) : null,
         primaryCategory: classification.primaryCategory,
         secondaryCategory: classification.secondaryCategory,
+        primaryGroup: classification.primaryGroup,
+        primaryNiche: classification.primaryNiche,
+        classificationSource: classification.classificationSource,
         aiConfidence: classification.confidence,
         aiReasoning: classification.reasoning,
         contentType: classification.contentType,
@@ -370,6 +363,9 @@ export async function* importPipeline(
           set: {
             primaryCategory: value.primaryCategory,
             secondaryCategory: value.secondaryCategory,
+            primaryGroup: value.primaryGroup,
+            primaryNiche: value.primaryNiche,
+            classificationSource: value.classificationSource,
             aiConfidence: value.aiConfidence,
             aiReasoning: value.aiReasoning,
             contentType: value.contentType,
