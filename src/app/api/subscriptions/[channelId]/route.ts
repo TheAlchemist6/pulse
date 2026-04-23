@@ -54,6 +54,8 @@ export async function GET(
         } : null,
         primaryCategory: subscription.primaryCategory,
         secondaryCategory: subscription.secondaryCategory,
+        primaryGroup: subscription.primaryGroup,
+        primaryNiche: subscription.primaryNiche,
         aiConfidence: subscription.aiConfidence,
         aiReasoning: subscription.aiReasoning,
         contentType: subscription.contentType,
@@ -90,8 +92,8 @@ export async function PATCH(
   
   try {
     const body = await request.json();
-    const { status, rank, primaryCategory, confirmed } = body;
-    
+    const { status, rank, primaryCategory, primaryGroup, primaryNiche, confirmed } = body;
+
     // Get current subscription
     const [current] = await db
       .select()
@@ -103,16 +105,16 @@ export async function PATCH(
         )
       )
       .limit(1);
-    
+
     if (!current) {
       return NextResponse.json({ error: "Subscription not found" }, { status: 404 });
     }
-    
+
     // Build update values
     const updateValues: Record<string, unknown> = {
       reviewed: true,
     };
-    
+
     // Handle override learning when category changes
     if (primaryCategory && primaryCategory !== current.primaryCategory) {
       updateValues.primaryCategory = primaryCategory;
@@ -120,7 +122,7 @@ export async function PATCH(
       updateValues.overrideFromCategory = current.primaryCategory;
       updateValues.overrideToCategory = primaryCategory;
       updateValues.overriddenAt = new Date();
-      
+
       // Log the override
       await db.insert(overrideLog).values({
         userId,
@@ -130,11 +132,35 @@ export async function PATCH(
         aiConfidenceWas: current.aiConfidence,
       });
     }
-    
+
+    // Pulse Map Tier 1 Move action: group + niche reassignment
+    if (primaryGroup !== undefined && primaryGroup !== current.primaryGroup) {
+      updateValues.primaryGroup = primaryGroup;
+      updateValues.userOverridden = true;
+      // Mirror to legacy primaryCategory so existing reads stay coherent
+      if (!primaryCategory) {
+        updateValues.primaryCategory = primaryNiche || primaryGroup || current.primaryCategory;
+      }
+      updateValues.overrideFromCategory = current.primaryGroup ?? current.primaryCategory;
+      updateValues.overrideToCategory = primaryGroup;
+      updateValues.overriddenAt = new Date();
+
+      await db.insert(overrideLog).values({
+        userId,
+        channelId,
+        fromCategory: current.primaryGroup ?? current.primaryCategory,
+        toCategory: primaryGroup,
+        aiConfidenceWas: current.aiConfidence,
+      });
+    }
+    if (primaryNiche !== undefined && primaryNiche !== current.primaryNiche) {
+      updateValues.primaryNiche = primaryNiche;
+    }
+
     if (status !== undefined) {
       updateValues.status = status;
     }
-    
+
     if (rank !== undefined) {
       updateValues.rank = rank;
     }
@@ -189,6 +215,8 @@ export async function PATCH(
         } : null,
         primaryCategory: updated.primaryCategory,
         secondaryCategory: updated.secondaryCategory,
+        primaryGroup: updated.primaryGroup,
+        primaryNiche: updated.primaryNiche,
         aiConfidence: updated.aiConfidence,
         aiReasoning: updated.aiReasoning,
         contentType: updated.contentType,

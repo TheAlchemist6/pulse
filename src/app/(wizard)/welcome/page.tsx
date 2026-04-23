@@ -703,11 +703,8 @@ export default function WelcomeWizard() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="outline" onClick={() => router.push("/triage")} className="flex-1">
-              Full Triage ({user?.subscriptionCount || 0} channels)
-            </Button>
             <Button onClick={() => router.push("/dashboard")} className="flex-1 gap-2">
-              Go to Dashboard <ArrowRight className="h-4 w-4" />
+              Go to Pulse Map ({user?.subscriptionCount || 0} channels) <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </CardContent>

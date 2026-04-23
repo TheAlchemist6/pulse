@@ -3,20 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Layers,
-  Tags,
-  Settings,
-  LogOut,
-  Moon,
-  Sun,
-} from "lucide-react";
 import { signOut } from "next-auth/react";
-import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
   user: {
@@ -28,89 +15,136 @@ interface AppSidebarProps {
 }
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/subscriptions", label: "Subscriptions", icon: Layers },
-  { href: "/categories", label: "Categories", icon: Tags },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: "Subscriptions", mark: "◈" },
+  { href: "/settings", label: "Settings", mark: "◎" },
 ];
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(false);
 
-  React.useEffect(() => setMounted(true), []);
+  const width = expanded ? 180 : 52;
+  const userInitial = (user.name?.charAt(0) || user.email?.charAt(0) || "U").toUpperCase();
 
   return (
-    <div className="flex flex-col w-64 border-r bg-background h-screen sticky top-0">
-      <div className="px-4 py-4 border-b">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-            P
-          </div>
-          <span className="text-lg font-semibold">Pulse</span>
-        </Link>
+    <aside
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      className="sticky top-0 flex h-screen shrink-0 flex-col transition-[width] duration-200 ease-out"
+      style={{
+        width: `${width}px`,
+        background: "var(--pulse-surface)",
+        borderRight: "1px solid var(--pulse-border)",
+      }}
+    >
+      <div
+        className="flex h-[52px] items-center gap-[10px] overflow-hidden px-4"
+        style={{ borderBottom: "1px solid var(--pulse-border)" }}
+      >
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center"
+          style={{
+            border: "1px solid var(--pulse-amber)",
+            color: "var(--pulse-amber)",
+            fontFamily: "var(--font-cormorant)",
+            fontSize: "15px",
+            fontWeight: 300,
+          }}
+        >
+          P
+        </div>
+        <span
+          className="overflow-hidden text-[14px] uppercase transition-opacity"
+          style={{
+            fontFamily: "var(--font-cormorant)",
+            color: "var(--pulse-text)",
+            fontWeight: 300,
+            letterSpacing: "0.15em",
+            opacity: expanded ? 1 : 0,
+            whiteSpace: "nowrap",
+          }}
+        >
+          ULSE
+        </span>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      {/* Nav */}
+      <nav className="flex-1 space-y-1 px-2 py-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant={isActive ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start gap-2",
-                  isActive && "bg-primary/10 text-primary hover:bg-primary/15"
-                )}
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 px-2 py-2 transition-colors"
+              style={{
+                color: isActive ? "var(--pulse-amber)" : "var(--pulse-muted)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.color = "var(--pulse-text)";
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.color = "var(--pulse-muted)";
+              }}
+            >
+              <span className="w-5 shrink-0 text-center text-[14px]">{item.mark}</span>
+              <span
+                className="overflow-hidden text-[10px] uppercase tracking-[0.12em] transition-opacity"
+                style={{
+                  fontFamily: "var(--font-dm-mono)",
+                  opacity: expanded ? 1 : 0,
+                  whiteSpace: "nowrap",
+                }}
               >
-                <item.icon className="h-4 w-4" />
                 {item.label}
-              </Button>
+              </span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="p-4 border-t space-y-3">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user.avatar_url || user.image || ""} alt={user.name || "User"} />
-            <AvatarFallback>
-              {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-sm font-medium truncate">
-              {user.name || "User"}
-            </span>
-            <span className="text-xs text-muted-foreground truncate">
-              {user.email}
-            </span>
-          </div>
+      {/* Footer: user */}
+      <div
+        className="flex items-center gap-3 px-2 py-3"
+        style={{ borderTop: "1px solid var(--pulse-border)" }}
+      >
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center text-[11px]"
+          style={{
+            border: "1px solid var(--pulse-border-hi)",
+            color: "var(--pulse-text)",
+            fontFamily: "var(--font-cormorant)",
+          }}
+          title={user.name || user.email || "User"}
+        >
+          {userInitial}
         </div>
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex-1 justify-start gap-2 text-muted-foreground hover:text-foreground"
-            onClick={() => signOut({ callbackUrl: "/" })}
+        <div
+          className="flex min-w-0 flex-1 items-center justify-between gap-2 overflow-hidden transition-opacity"
+          style={{ opacity: expanded ? 1 : 0 }}
+        >
+          <span
+            className="truncate text-[10px]"
+            style={{
+              fontFamily: "var(--font-dm-mono)",
+              color: "var(--pulse-text)",
+            }}
           >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </Button>
-          {mounted && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground px-2"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-          )}
+            {user.name?.split(" ")[0] || "User"}
+          </span>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="shrink-0 text-[9px] uppercase tracking-[0.1em] transition-colors hover:text-[var(--pulse-amber)]"
+            style={{
+              fontFamily: "var(--font-dm-mono)",
+              color: "var(--pulse-muted)",
+              background: "transparent",
+            }}
+          >
+            out
+          </button>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

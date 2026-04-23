@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { userSubscriptions, channelMetadata, userCategories } from "@/lib/db/schema";
+import { userSubscriptions, channelMetadata } from "@/lib/db/schema";
 import { eq, and, like, or, desc, asc, sql, inArray } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -56,6 +56,8 @@ export async function GET(request: Request) {
         rank: userSubscriptions.rank,
         primaryCategory: userSubscriptions.primaryCategory,
         secondaryCategory: userSubscriptions.secondaryCategory,
+        primaryGroup: userSubscriptions.primaryGroup,
+        primaryNiche: userSubscriptions.primaryNiche,
         aiConfidence: userSubscriptions.aiConfidence,
         aiReasoning: userSubscriptions.aiReasoning,
         contentType: userSubscriptions.contentType,
@@ -107,6 +109,8 @@ export async function GET(request: Request) {
         } : null,
         primaryCategory: s.primaryCategory,
         secondaryCategory: s.secondaryCategory,
+        primaryGroup: s.primaryGroup,
+        primaryNiche: s.primaryNiche,
         aiConfidence: s.aiConfidence,
         aiReasoning: s.aiReasoning,
         contentType: s.contentType,

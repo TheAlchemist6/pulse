@@ -4,6 +4,22 @@
 
 @layer base {
   :root {
+    /* Pulse Map Tier 1 design tokens — namespaced to avoid colliding with shadcn/ui HSL tokens below */
+    --pulse-bg: #0a0a0a;
+    --pulse-surface: #111111;
+    --pulse-surface-hover: #161616;
+    --pulse-border: #1f1f1f;
+    --pulse-border-hi: #2e2e2e;
+    --pulse-amber: #f59e0b;
+    --pulse-amber-dim: rgba(245, 158, 11, 0.12);
+    --pulse-amber-glow: rgba(245, 158, 11, 0.06);
+    --pulse-text: #e8e3d9;
+    --pulse-text-warm: #b0a898;
+    --pulse-muted: #6b6560;
+    --pulse-subtle: #3a3530;
+    --font-serif: var(--font-cormorant), Georgia, serif;
+    --font-mono: var(--font-dm-mono), "Courier New", monospace;
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
